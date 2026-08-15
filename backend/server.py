@@ -7,6 +7,7 @@ import asyncio
 import logging
 import uuid
 import html as html_lib
+import re
 from pathlib import Path
 from typing import Optional
 from datetime import datetime, timezone
@@ -123,7 +124,8 @@ SYSTEM_TEMPLATE = (
     "un'informazione manca, fai un'ipotesi ragionata dichiarandola, senza inventare dati.\n"
     "- Ragiona da esperto: collega ciò che dice a ciò che serve per il suo obiettivo dichiarato. Ogni "
     "osservazione ha un 'perché'.\n"
-    "- Niente emoji, niente toni da vendita aggressiva.\n\n"
+    "- Niente emoji, niente toni da vendita aggressiva.\n"
+    "- Non usare formattazione markdown (niente #, *, trattini di separazione ---): scrivi in testo semplice; i titoli delle sezioni vanno in MAIUSCOLO.\n\n"
     "STRUTTURA (usa questi titoli in MAIUSCOLO come intestazioni)\n"
     "1. SINTESI DEL POSIZIONAMENTO — 3-4 righe: chi è {nome}, chi vuole attrarre, l'obiettivo su "
     "Instagram, e dove si colloca oggi.\n"
@@ -151,7 +153,10 @@ def build_user_text(data: AuditRequest) -> str:
 
 
 def _email_line(p: str) -> str:
-    text = html_lib.escape(p.replace("**", "").strip())
+    raw = re.sub(r'^\s*#+\s*', '', p.replace("**", "").replace("`", "")).strip()
+    if re.fullmatch(r'[-–—\s]*', raw):
+        return ""
+    text = html_lib.escape(raw)
     low = text.lower()
     if low.startswith("impatto atteso"):
         return (

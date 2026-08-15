@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { TrendingUp } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 
-const clean = (line) => line.replace(/[*#_]/g, "").trim();
+const clean = (line) => line.replace(/[*#_`]/g, "").trim();
 
 const isHeading = (line) => {
   const c = clean(line);
@@ -11,8 +11,13 @@ const isHeading = (line) => {
 
 const isImpact = (line) => /^impatto atteso/i.test(clean(line));
 
+const isSeparator = (line) => {
+  const c = clean(line);
+  return c === "" || /^[-–—]+$/.test(c);
+};
+
 export const Report = ({ data, nome }) => {
-  const lines = (data.report || "").split("\n").filter((l) => l.trim());
+  const lines = (data.report || "").split("\n").filter((l) => l.trim() && !isSeparator(l));
 
   return (
     <div className="min-h-screen">
@@ -56,7 +61,7 @@ export const Report = ({ data, nome }) => {
               );
             return (
               <p key={i} className="text-sm leading-relaxed text-foreground/85 sm:text-base">
-                {line.replace(/\*\*/g, "")}
+                {clean(line)}
               </p>
             );
           })}
