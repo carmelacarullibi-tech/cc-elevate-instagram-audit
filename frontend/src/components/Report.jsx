@@ -28,7 +28,7 @@ export const Report = ({ data, nome }) => {
           {nome ? `Ciao ${nome}` : "Instagram Audit"}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground" data-testid="report-email-status">
-          {data.email_sent ? "Una copia è stata inviata alla tua email." : ""}
+          {data.email_sent ? "Una copia è stata inviata alla tua email. Controlla anche lo spam e sposta l'email in posta in arrivo." : ""}
         </p>
 
         <article className="mt-10 space-y-4 border-t border-border pt-8">

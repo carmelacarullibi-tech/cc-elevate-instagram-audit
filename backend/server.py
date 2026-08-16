@@ -182,7 +182,8 @@ def report_to_html(nome: str, report: str) -> str:
 <p style="color:#888888;font-size:14px;margin:0 0 24px">Ciao {html_lib.escape(nome)}, ecco il tuo audit personalizzato.</p>
 {body}
 <p style="margin:30px 0 0"><a href="{PUBLIC_APP_URL}/deep-audit" style="display:inline-block;background:#D4AF37;color:#000000;text-decoration:none;padding:12px 22px;font-family:Arial,sans-serif;font-size:14px;font-weight:bold">Prenota una consulenza</a></p>
-<p style="margin-top:28px;font-size:12px;color:#666666;text-align:center;letter-spacing:1px">CC-ELEVATE.COM &nbsp;&middot;&nbsp; &copy; 2026 CC ELEVATE</p>
+<p style="margin:28px 0 0;font-size:12px;color:#888888;line-height:1.5">Se questa email è finita nello spam, spostala in posta in arrivo per non perdere i prossimi contenuti.</p>
+<p style="margin-top:20px;font-size:12px;color:#666666;text-align:center;letter-spacing:1px">CC-ELEVATE.COM &nbsp;&middot;&nbsp; &copy; 2026 CC ELEVATE</p>
 </div></div>"""
 
 
