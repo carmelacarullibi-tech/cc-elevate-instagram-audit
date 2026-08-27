@@ -5,6 +5,9 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import asyncio
 import logging
+import json
+import urllib.request
+import urllib.error
 import uuid
 import html as html_lib
 import re
@@ -34,6 +37,44 @@ api_router = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+# ---------- HubSpot: sincronizza i lead con consenso newsletter ----------
+HUBSPOT_TOKEN = os.environ.get('HUBSPOT_TOKEN', '')
+
+
+def _hubspot_upsert_sync(email: str, properties: dict) -> None:
+    body = json.dumps({
+        "inputs": [{"idProperty": "email", "id": email, "properties": properties}]
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert",
+        data=body,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {HUBSPOT_TOKEN}",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp.read()
+    except urllib.error.HTTPError as e:
+        logger.error(f"HubSpot upsert HTTPError {e.code}: {e.read().decode('utf-8', 'ignore')}")
+    except Exception as e:
+        logger.error(f"HubSpot upsert failed: {e}")
+
+
+async def hubspot_sync_lead(email: str, source: str, extra: Optional[dict] = None) -> None:
+    if not HUBSPOT_TOKEN:
+        return
+    properties = {"email": email, "assessment_source": source}
+    if extra:
+        properties.update({k: v for k, v in extra.items() if v})
+    try:
+        await asyncio.to_thread(_hubspot_upsert_sync, email, properties)
+    except Exception as e:
+        logger.error(f"HubSpot sync error: {e}")
 
 
 class AuditRequest(BaseModel):
@@ -248,6 +289,12 @@ async def create_audit(data: AuditRequest):
 
     lead = Lead(answers=data.model_dump(), report=report, emails_sent=bool(sent_user and sent_admin))
     await db.leads.insert_one(lead.model_dump())
+
+    if data.marketing_accepted:
+        asyncio.create_task(hubspot_sync_lead(
+            str(data.email), "Instagram Audit",
+            {"firstname": data.nome},
+        ))
 
     return {"id": lead.id, "report": report, "email_sent": sent_user}
 
