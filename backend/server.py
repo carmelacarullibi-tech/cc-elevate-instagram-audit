@@ -174,6 +174,7 @@ SYSTEM_TEMPLATE = (
     "- Ragiona da esperto: collega ciò che dice a ciò che serve per il suo obiettivo dichiarato. Ogni "
     "osservazione ha un 'perché'.\n"
     "- Niente emoji, niente toni da vendita aggressiva.\n"
+    "- Scrivi sempre con tutti gli accenti corretti (è, più, perché, già, può, però) e non usare trattini lunghi.\n"
     "- Non usare formattazione markdown (niente #, *, trattini di separazione ---): scrivi in testo semplice; i titoli delle sezioni vanno in MAIUSCOLO.\n\n"
     "STRUTTURA (usa questi titoli in MAIUSCOLO come intestazioni)\n"
     "1. SINTESI DEL POSIZIONAMENTO — 3-4 righe: chi è {nome}, chi vuole attrarre, l'obiettivo su "
