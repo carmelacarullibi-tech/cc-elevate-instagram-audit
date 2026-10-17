@@ -21,9 +21,17 @@ from anthropic import AsyncAnthropic
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Il database è solo una copia di backup dei lead: se manca o non è raggiungibile
+# il servizio deve comunque partire e inviare report, email e lead a HubSpot.
+mongo_url = os.environ.get('MONGO_URL', '')
+client = None
+db = None
+if mongo_url:
+    try:
+        client = AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=3000)
+        db = client[os.environ.get('DB_NAME', 'cc_instagram_audit')]
+    except Exception as exc:
+        logging.getLogger(__name__).error(f"MongoDB non disponibile, avvio senza database: {exc}")
 
 ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
 resend.api_key = os.environ['RESEND_API_KEY']
@@ -288,7 +296,11 @@ async def create_audit(data: AuditRequest):
                                   lead_to_html(data, report))
 
     lead = Lead(answers=data.model_dump(), report=report, emails_sent=bool(sent_user and sent_admin))
-    await db.leads.insert_one(lead.model_dump())
+    if db is not None:
+        try:
+            await db.leads.insert_one(lead.model_dump())
+        except Exception as e:
+            logger.error(f"Salvataggio lead su MongoDB non riuscito: {e}")
 
     if data.marketing_accepted:
         asyncio.create_task(hubspot_sync_lead(
@@ -310,6 +322,8 @@ async def admin_login(payload: dict):
 async def admin_leads(x_admin_password: str = Header(None)):
     if x_admin_password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Non autorizzato")
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database non disponibile")
     leads = await db.leads.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
     return leads
 
@@ -327,4 +341,5 @@ app.add_middleware(
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    if client is not None:
+        client.close()
