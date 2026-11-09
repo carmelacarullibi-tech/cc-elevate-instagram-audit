@@ -36,6 +36,7 @@ if mongo_url:
 ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
 resend.api_key = os.environ['RESEND_API_KEY']
 SENDER_EMAIL = os.environ['SENDER_EMAIL']
+REPLY_TO_EMAIL = os.environ.get('REPLY_TO_EMAIL', 'sales@cc-elevate.com')
 NOTIFY_EMAIL = os.environ['NOTIFY_EMAIL']
 ADMIN_PASSWORD = os.environ['ADMIN_PASSWORD']
 PUBLIC_APP_URL = os.environ['PUBLIC_APP_URL']
@@ -254,11 +255,12 @@ def lead_to_html(data: AuditRequest, report: str) -> str:
 </div>"""
 
 
-async def send_email(to: str, subject: str, html: str):
+async def send_email(to: str, subject: str, html: str, reply_to: str = None):
+    payload = {"from": SENDER_EMAIL, "to": [to], "subject": subject, "html": html}
+    if reply_to:
+        payload["reply_to"] = reply_to
     try:
-        await asyncio.to_thread(resend.Emails.send, {
-            "from": SENDER_EMAIL, "to": [to], "subject": subject, "html": html,
-        })
+        await asyncio.to_thread(resend.Emails.send, payload)
         return True
     except Exception as e:
         logger.error(f"Resend failed for {to}: {e}")
@@ -292,7 +294,7 @@ async def create_audit(data: AuditRequest):
     report = report if isinstance(report, str) else str(report)
 
     sent_user = await send_email(data.email, "Il tuo Instagram Audit - CC Elevate",
-                                report_to_html(data.nome, report))
+                                report_to_html(data.nome, report), reply_to=REPLY_TO_EMAIL)
     sent_admin = await send_email(NOTIFY_EMAIL, f"Nuovo lead Instagram Audit: {data.nome}",
                                   lead_to_html(data, report))
 
