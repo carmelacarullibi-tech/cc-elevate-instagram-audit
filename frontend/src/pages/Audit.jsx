@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -85,6 +85,12 @@ export default function Audit() {
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
 
+  // Risveglia il backend (Render si addormenta dopo un po' di inattività)
+  // mentre la persona compila le domande.
+  useEffect(() => {
+    axios.get(`${API}/`, { timeout: 120000 }).catch(() => {});
+  }, []);
+
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const current = STEPS[step];
 
@@ -99,7 +105,7 @@ export default function Audit() {
     }
     setLoading(true);
     try {
-      const { data } = await axios.post(`${API}/audit`, form);
+      const { data } = await axios.post(`${API}/audit`, form, { timeout: 240000 });
       setReport(data);
       window.scrollTo(0, 0);
     } catch (e) {
@@ -229,6 +235,16 @@ export default function Audit() {
             </div>
           )}
         </div>
+
+        {loading && (
+          <p
+            data-testid="wizard-loading-note"
+            className="mt-8 rounded-sm border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+          >
+            Stiamo scrivendo il tuo audit personalizzato: ci vuole circa un minuto. Non chiudere e non
+            ricaricare la pagina. Il report ti arriva anche via email (controlla anche lo spam).
+          </p>
+        )}
 
         <div className="mt-12 flex items-center justify-between border-t border-border pt-6">
           <button
